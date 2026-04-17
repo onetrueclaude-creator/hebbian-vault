@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hebbian-vault"
+version = "0.1.0"
+description = "MCP server that adds intelligent, use-adaptive search to Obsidian vaults. Your vault remembers what matters."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Toygar Ermin" },
+]
+keywords = ["mcp", "obsidian", "search", "hebbian", "pagerank", "knowledge-management"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Text Processing :: Indexing",
+]
+dependencies = [
+    "mcp>=1.20.0",
+    "bm25s>=0.2.0",
+    "networkx>=3.0",
+    "scipy>=1.10.0",
+    "pyyaml>=6.0",
+    "numpy>=1.24.0",
+]
+
+[project.scripts]
+hebbian-vault = "hebbian_vault.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hebbian_vault"]
