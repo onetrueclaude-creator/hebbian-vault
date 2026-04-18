@@ -10,8 +10,8 @@ def main():
     )
     parser.add_argument(
         "--vault", "-v",
-        required=True,
-        help="Path to the Obsidian vault directory",
+        default=None,
+        help="Path to the Obsidian vault directory (optional — can be configured later via configure_vault tool)",
     )
     parser.add_argument(
         "--inline-tracking",
@@ -32,22 +32,17 @@ def main():
     )
     args = parser.parse_args()
 
-    vault_path = os.path.expanduser(args.vault)
-    if not os.path.isdir(vault_path):
-        print(f"Error: vault path does not exist: {vault_path}", file=sys.stderr)
-        sys.exit(1)
-
     from .server import mcp_server, init_engine
-    from .config import Config
 
-    count = init_engine(vault_path)
-    print(f"hebbian-vault: indexed {count} notes in {vault_path}", file=sys.stderr)
-
-    if args.inline_tracking:
-        from .server import _config
-        if _config:
-            _config.inline_tracking = True
-            _config.save()
+    if args.vault:
+        vault_path = os.path.expanduser(args.vault)
+        if not os.path.isdir(vault_path):
+            print(f"Error: vault path does not exist: {vault_path}", file=sys.stderr)
+            sys.exit(1)
+        count = init_engine(vault_path, inline_tracking=args.inline_tracking)
+        print(f"hebbian-vault: indexed {count} notes in {vault_path}", file=sys.stderr)
+    else:
+        print("hebbian-vault: starting without vault (use configure_vault tool to set path)", file=sys.stderr)
 
     mcp_server.run(transport=args.transport)
 

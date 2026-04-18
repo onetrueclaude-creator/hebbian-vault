@@ -16,19 +16,22 @@ _tracker: HebbianTracker | None = None
 _bm25: BM25Ranker | None = None
 _pr: PageRankRanker | None = None
 _config: Config | None = None
+_initialized: bool = False
 
 mcp_server = FastMCP(
     "hebbian-vault",
     instructions="Intelligent search for Obsidian vaults. Uses Hebbian learning (files you use rank higher), "
     "PageRank (hub pages surface first), and BM25 (keyword relevance) merged via Reciprocal Rank Fusion. "
-    "Your vault gets smarter the more you use it.",
+    "Your vault gets smarter the more you use it. "
+    "If the server starts without a vault path, use the configure_vault tool first to point it at your vault.",
 )
 
 
-def init_engine(vault_path: str):
-    global _index, _tracker, _bm25, _pr, _config
+def init_engine(vault_path: str, inline_tracking: bool = False):
+    global _index, _tracker, _bm25, _pr, _config, _initialized
     _config = Config.load(vault_path)
     _config.vault_path = vault_path
+    _config.inline_tracking = inline_tracking
     os.makedirs(_config.hebbian_dir(), exist_ok=True)
     _config.save()
 
@@ -45,7 +48,32 @@ def init_engine(vault_path: str):
     _pr.build_graph(_index.link_graph())
     _pr.compute_global()
 
+    _initialized = True
     return count
+
+
+def _not_ready() -> str:
+    return json.dumps({
+        "error": "No vault configured. Use the configure_vault tool first to point the server at your Obsidian vault.",
+        "hint": "Call configure_vault with the absolute path to your vault directory.",
+    })
+
+
+@mcp_server.tool(name="configure_vault", annotations={"readOnlyHint": False})
+def configure_vault(vault_path: str, inline_tracking: bool = False) -> str:
+    """Configure the vault path for this server. Call this first if the server
+    started without a --vault argument. The vault_path must be an absolute path
+    to an Obsidian vault directory containing .md files."""
+    if not os.path.isdir(vault_path):
+        return json.dumps({"error": f"Directory does not exist: {vault_path}"})
+
+    count = init_engine(vault_path, inline_tracking=inline_tracking)
+    return json.dumps({
+        "status": "configured",
+        "vault_path": vault_path,
+        "notes_indexed": count,
+        "inline_tracking": inline_tracking,
+    }, indent=2)
 
 
 @mcp_server.tool(name="vault_search", annotations={"readOnlyHint": False})
@@ -53,8 +81,8 @@ def vault_search(query: str, limit: int = 10, include_content: bool = False) -> 
     """Search the vault with hybrid ranking. Results are ranked by keyword relevance,
     graph centrality, and usage frequency merged via Reciprocal Rank Fusion.
     Each returned result strengthens that file's future ranking (Hebbian learning)."""
-    if not _index or not _bm25 or not _pr or not _tracker:
-        return json.dumps({"error": "Engine not initialized"})
+    if not _initialized:
+        return _not_ready()
 
     bm25_results = _bm25.search(query, top_k=50)
     seed_docs = [doc for doc, _ in bm25_results[:10]]
@@ -101,8 +129,8 @@ def vault_search(query: str, limit: int = 10, include_content: bool = False) -> 
 def vault_read(path: str) -> str:
     """Read a single vault note by relative path. Returns full content with parsed
     frontmatter, outgoing links, and incoming links. Strengthens the file's Hebbian score."""
-    if not _index or not _tracker or not _pr:
-        return json.dumps({"error": "Engine not initialized"})
+    if not _initialized:
+        return _not_ready()
 
     note = _index.get_note(path)
     if not note:
@@ -129,8 +157,8 @@ def vault_read(path: str) -> str:
 def vault_neighbors(path: str, depth: int = 1, limit: int = 20) -> str:
     """Find notes connected to a given note by wikilinks. Shows both outgoing and
     incoming links, with PageRank scores for prioritization."""
-    if not _index or not _pr:
-        return json.dumps({"error": "Engine not initialized"})
+    if not _initialized:
+        return _not_ready()
 
     note = _index.get_note(path)
     if not note:
@@ -185,8 +213,8 @@ def vault_neighbors(path: str, depth: int = 1, limit: int = 20) -> str:
 def vault_hot(limit: int = 20) -> str:
     """Top-N most-used files by Hebbian score (usage frequency weighted by recency).
     Shows what the vault considers most important based on actual usage patterns."""
-    if not _index or not _tracker or not _pr:
-        return json.dumps({"error": "Engine not initialized"})
+    if not _initialized:
+        return _not_ready()
 
     scored = []
     for rel in _index.all_rel_paths():
@@ -207,8 +235,8 @@ def vault_hot(limit: int = 20) -> str:
 def vault_stats() -> str:
     """Vault-level analytics: file count, link count, orphans, broken links,
     average connectivity, and top hub pages by PageRank."""
-    if not _index or not _pr:
-        return json.dumps({"error": "Engine not initialized"})
+    if not _initialized:
+        return _not_ready()
 
     graph = _index.link_graph()
     total_links = sum(len(targets) for targets in graph.values())
@@ -235,8 +263,8 @@ def vault_stats() -> str:
 def vault_health() -> str:
     """Structural integrity check: broken links, orphaned leaves, missing frontmatter.
     Returns a list of issues found."""
-    if not _index:
-        return json.dumps({"error": "Engine not initialized"})
+    if not _initialized:
+        return _not_ready()
 
     issues = check_health(_index)
     return json.dumps({
