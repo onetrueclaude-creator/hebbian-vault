@@ -21,14 +21,14 @@ def main():
     parser.add_argument(
         "--transport",
         choices=["stdio", "streamable-http", "sse"],
-        default=None,
-        help="MCP transport (default: auto-detect from environment)",
+        default="stdio",
+        help="MCP transport (default: stdio — the right choice for MCPize proxy mode and local Claude Desktop)",
     )
     parser.add_argument(
         "--port",
         type=int,
-        default=None,
-        help="Port for HTTP transport (default: from PORT env var or 8000)",
+        default=8000,
+        help="Port for streamable-http transport (default: 8000, ignored for stdio)",
     )
     args = parser.parse_args()
 
@@ -44,24 +44,11 @@ def main():
     else:
         print("hebbian-vault: starting without vault (use configure_vault tool to set path)", file=sys.stderr)
 
-    # Auto-detect transport: if PORT env var is set (Cloud Run / MCPize), use HTTP
-    transport = args.transport
-    if transport is None:
-        if os.environ.get("PORT"):
-            transport = "streamable-http"
-            print(f"hebbian-vault: PORT={os.environ['PORT']} detected, using streamable-http transport", file=sys.stderr)
-        else:
-            transport = "stdio"
-
-    # Use PORT env var if set (Cloud Run injects this)
-    port = args.port or int(os.environ.get("PORT", "8000"))
-
-    if transport in ("streamable-http", "sse"):
-        # Set host to 0.0.0.0 for container environments
+    if args.transport in ("streamable-http", "sse"):
         os.environ.setdefault("UVICORN_HOST", "0.0.0.0")
-        os.environ.setdefault("UVICORN_PORT", str(port))
+        os.environ.setdefault("UVICORN_PORT", str(args.port))
 
-    mcp_server.run(transport=transport)
+    mcp_server.run(transport=args.transport)
 
 
 if __name__ == "__main__":
