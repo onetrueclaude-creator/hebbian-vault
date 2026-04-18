@@ -50,6 +50,7 @@ hebbian-vault --vault ~/my-vault
 
 | Tool | Description |
 |------|-------------|
+| `configure_vault` | Point the server at a vault at runtime (if not set via `--vault`) |
 | `vault_search` | Hybrid ranked search (BM25 + PageRank + Hebbian) |
 | `vault_read` | Read a note with frontmatter, links, and Hebbian metadata |
 | `vault_neighbors` | Find connected notes by wikilinks (1-hop or 2-hop) |
@@ -67,13 +68,37 @@ This is [Hebbian learning](https://en.wikipedia.org/wiki/Hebbian_theory) applied
 
 By default, tracking data is stored in a `.hebbian/` sidecar directory inside your vault. Your markdown files are not modified.
 
-Use `--inline-tracking` to write `retrieval_count` directly into YAML frontmatter (visible in Obsidian).
+Pro users can enable `--inline-tracking` to write `retrieval_count` directly into YAML frontmatter (visible natively in Obsidian, queryable via Dataview).
+
+## Pro tier
+
+The free tier is fully featured for most use. Pro unlocks convenience features for power users:
+
+- `--inline-tracking` — write retrieval counts into note frontmatter instead of sidecar files
+- Priority email support from the developer
+- Future premium features ship Pro-unlocked by default
+
+License activation — any one of these works:
+
+```bash
+# 1. Environment variable (good for shell profiles)
+export HEBBIAN_VAULT_LICENSE="eyJhbGc..."
+
+# 2. CLI flag (good for one-off testing)
+hebbian-vault --license-key "eyJhbGc..." --vault ~/my-vault
+
+# 3. Config file (good for permanent install)
+echo "eyJhbGc..." > ~/.hebbian-vault/license.jwt
+```
+
+Licenses are verified fully offline — no phone-home, no activation server. Get a license: **[coming soon — Dodo Payments storefront in verification]**.
 
 ## Options
 
 ```
-hebbian-vault --vault PATH          Path to Obsidian vault (required)
-              --inline-tracking     Write tracking to file frontmatter
+hebbian-vault --vault PATH          Path to Obsidian vault
+              --inline-tracking     [Pro] Write tracking to file frontmatter
+              --license-key KEY     Pro license JWT (also reads HEBBIAN_VAULT_LICENSE env)
               --transport TYPE      stdio (default) or streamable-http
               --port PORT           Port for HTTP transport (default: 8000)
 ```

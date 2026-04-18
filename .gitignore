@@ -38,6 +38,9 @@ htmlcov/
 .env.*
 *.pem
 *.key
+*.jwt
+license.jwt
+test_license.*
 
 # OS
 Thumbs.db

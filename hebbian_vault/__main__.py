@@ -16,7 +16,12 @@ def main():
     parser.add_argument(
         "--inline-tracking",
         action="store_true",
-        help="Write retrieval_count directly into file frontmatter (default: sidecar .hebbian/ directory)",
+        help="[Pro] Write retrieval_count directly into file frontmatter (default: sidecar .hebbian/ directory)",
+    )
+    parser.add_argument(
+        "--license-key",
+        default=None,
+        help="Pro license key (JWT). Overrides HEBBIAN_VAULT_LICENSE env var and ~/.hebbian-vault/license.jwt",
     )
     parser.add_argument(
         "--transport",
@@ -32,6 +37,14 @@ def main():
     )
     args = parser.parse_args()
 
+    from .license import load_license, feature_gate
+    license = load_license(args.license_key)
+
+    inline_tracking = False
+    if args.inline_tracking:
+        if feature_gate(license, "inline_tracking"):
+            inline_tracking = True
+
     from .server import mcp_server, init_engine
 
     if args.vault:
@@ -39,10 +52,14 @@ def main():
         if not os.path.isdir(vault_path):
             print(f"Error: vault path does not exist: {vault_path}", file=sys.stderr)
             sys.exit(1)
-        count = init_engine(vault_path, inline_tracking=args.inline_tracking)
+        count = init_engine(vault_path, inline_tracking=inline_tracking)
         print(f"hebbian-vault: indexed {count} notes in {vault_path}", file=sys.stderr)
     else:
         print("hebbian-vault: starting without vault (use configure_vault tool to set path)", file=sys.stderr)
+
+    if license:
+        print(f"hebbian-vault: Pro license active (plan={license.plan}, sub={license.subject})",
+              file=sys.stderr)
 
     if args.transport in ("streamable-http", "sse"):
         port = int(os.environ.get("PORT") or args.port)
