@@ -45,8 +45,11 @@ def main():
         print("hebbian-vault: starting without vault (use configure_vault tool to set path)", file=sys.stderr)
 
     if args.transport in ("streamable-http", "sse"):
-        os.environ.setdefault("UVICORN_HOST", "0.0.0.0")
-        os.environ.setdefault("UVICORN_PORT", str(args.port))
+        port = int(os.environ.get("PORT") or args.port)
+        mcp_server.settings.host = "0.0.0.0"
+        mcp_server.settings.port = port
+        mcp_server.settings.stateless_http = True
+        print(f"hebbian-vault: binding {args.transport} on 0.0.0.0:{port} (stateless)", file=sys.stderr)
 
     mcp_server.run(transport=args.transport)
 

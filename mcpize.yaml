@@ -1,5 +1,5 @@
 runtime: python
-transport: stdio
-entry_point: python -m hebbian_vault
+transport: streamable-http
+entry_point: python -m hebbian_vault --transport streamable-http
 install_command: pip install -e .
 python_version: "3.12"

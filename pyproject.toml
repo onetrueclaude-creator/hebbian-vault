@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hebbian-vault"
-version = "0.1.4"
+version = "0.1.5"
 description = "MCP server that adds intelligent, use-adaptive search to Obsidian vaults. Your vault remembers what matters."
 readme = "README.md"
 license = "MIT"
