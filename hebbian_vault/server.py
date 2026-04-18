@@ -2,6 +2,8 @@
 import json
 import os
 from mcp.server.fastmcp import FastMCP
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from .config import Config
 from .indexer import VaultIndex
@@ -25,6 +27,11 @@ mcp_server = FastMCP(
     "Your vault gets smarter the more you use it. "
     "If the server starts without a vault path, use the configure_vault tool first to point it at your vault.",
 )
+
+
+@mcp_server.custom_route("/health", methods=["GET"])
+async def health_check(request: Request) -> JSONResponse:
+    return JSONResponse({"status": "healthy"})
 
 
 def init_engine(vault_path: str, inline_tracking: bool = False):
