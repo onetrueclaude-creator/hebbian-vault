@@ -1,3 +1,5 @@
+<!-- mcp-name: io.github.onetrueclaude-creator/hebbian-vault -->
+
 # hebbian-vault
 
 **MCP server for intelligent, use-adaptive Obsidian vault search.**
