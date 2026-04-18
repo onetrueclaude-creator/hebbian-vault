@@ -1,2 +1,2 @@
 """Hebbian Vault — MCP server for intelligent, use-adaptive Obsidian vault search."""
-__version__ = "0.1.3"
+__version__ = "0.1.4"
